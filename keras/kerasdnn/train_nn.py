@@ -1,5 +1,7 @@
 import utils_nn
 
+import mlflow
+import mlflow.keras
 import mlflow.sklearn
 from time import time
 
@@ -49,7 +51,6 @@ def train(args):
 
     data = utils_nn.gen_data(input_dim=input_dim, bsize=bs)
     model = utils_nn.build_model(in_dim=input_dim, drate=drop_rate, out=output)
-    results = compile_and_run_model(model, data, epochs, train_batch_size)
 
     start_time = time()
 
@@ -60,8 +61,15 @@ def train(args):
         mlflow.log_param("output", output)
         mlflow.log_param("train_batch_size", train_batch_size)
         mlflow.log_param("epochs", epochs)
+        results = compile_and_run_model(model, data, epochs, train_batch_size)
         mlflow.log_param("loss", results[0])
         mlflow.log_param("acc", results[1])
+
+        # Saving the model as an artifact.
+        mlflow.keras.log_model(model, "model")
+
+        run_id = mlflow.active_run().info.run_uuid
+        print("Run with id %s finished" % run_id)
 
     timed = time() - start_time
 
